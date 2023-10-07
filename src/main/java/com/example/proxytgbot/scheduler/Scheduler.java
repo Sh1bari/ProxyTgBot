@@ -5,6 +5,8 @@ import com.example.proxytgbot.models.entities.Domain;
 import com.example.proxytgbot.models.entities.Geo;
 import com.example.proxytgbot.models.entities.Proxy;
 import com.example.proxytgbot.models.entities.User;
+import com.example.proxytgbot.models.enums.DomainStatus;
+import com.example.proxytgbot.models.enums.ProxyStatus;
 import com.example.proxytgbot.repositories.DomainRepo;
 import com.example.proxytgbot.repositories.GeoRepo;
 import com.example.proxytgbot.repositories.ProxyRepo;
@@ -84,8 +86,14 @@ public class Scheduler {
     @SneakyThrows
     public void check(User user) {
         for (Geo geo : geoRepo.findAll()) {
-            List<Domain> domainList = user.getDomains().stream().filter(domain -> domain.getGeo().getName().equals(geo.getName())).toList();
-            List<Proxy> proxyList = user.getProxies().stream().filter(domain -> domain.getGeo().getName().equals(geo.getName())).toList();
+            List<Domain> domainList = user.getDomains().stream()
+                    .filter(domain -> domain.getGeo().getName().equals(geo.getName()))
+                    .filter(domain -> domain.getStatus() == DomainStatus.ACTIVE)
+                    .toList();
+            List<Proxy> proxyList = user.getProxies().stream()
+                    .filter(domain -> domain.getGeo().getName().equals(geo.getName()))
+                    .filter(proxy -> proxy.getStatus() == ProxyStatus.ACTIVE)
+                    .toList();
             for (Domain domain : domainList) {
                 List<Proxy> bannedProxyForDomain = new ArrayList<>();
                 List<Proxy> bannedProxy = new ArrayList<>();
@@ -142,7 +150,6 @@ public class Scheduler {
                         bannedProxyWithPage.add(proxyIter);
                     }catch (IOException e) {
                         System.out.println("Ошибка в proxy");
-
                         bannedProxy.add(proxyIter);
                     } catch (Exception e) {
                         System.out.println(e.getClass());
@@ -158,11 +165,15 @@ public class Scheduler {
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + "\nТип ошибки:\n- Превышено время ожидания" +
                             "\nПрокси:\n" + str);
+                    //domain.setStatus(DomainStatus.BANNED);
+                    //domainRepo.save(domain);
                 }
                 //Прокси не работает
                 if(!bannedProxy.isEmpty()){
                     StringBuilder str = new StringBuilder();
                     bannedProxy.forEach(o->{
+                        //o.setStatus(ProxyStatus.ERROR);
+                        //proxyRepo.save(o);
                         str.append(o.getCode()).append("\n");
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), "Прокси не работает:\n" + str);
@@ -175,6 +186,8 @@ public class Scheduler {
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + "\nТип ошибки:\n- Страница с баном" +
                             "\nПрокси:\n" + str);
+                    domain.setStatus(DomainStatus.BANNED);
+                    //domainRepo.save(domain);
                 }
 
             }

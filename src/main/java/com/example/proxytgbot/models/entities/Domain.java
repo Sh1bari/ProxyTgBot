@@ -19,16 +19,14 @@ public class Domain {
 
     private String domain;
 
-    @ToString.Exclude
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "geo_id")
     private Geo geo;
 
     @Enumerated(EnumType.STRING)
     private DomainStatus status;
 
-    @ToString.Exclude
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "user_id")
     private User user;
 
