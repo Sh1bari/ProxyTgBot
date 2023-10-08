@@ -21,10 +21,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -148,6 +145,11 @@ public class Scheduler {
                         System.out.println("Есть страница с баном");
 
                         bannedProxyWithPage.add(proxyIter);
+                    }catch (SSLHandshakeException e){
+                        //domain.setStatus(DomainStatus.BANNED);
+                        //domainRepo.save(domain);
+                        messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), "Ошибка в домене:\n" + domain.getDomain() + "\nВозможно неправильно написан, удаляется из проверки");
+                        break;
                     }catch (IOException e) {
                         System.out.println("Ошибка в proxy");
                         bannedProxy.add(proxyIter);

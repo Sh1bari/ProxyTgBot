@@ -2,6 +2,7 @@ package com.example.proxytgbot.telegram;
 
 
 import com.example.proxytgbot.config.BotConfig;
+import com.example.proxytgbot.models.enums.UserState;
 import com.example.proxytgbot.services.interfaces.MessageSender;
 import com.example.proxytgbot.services.interfaces.SecurityService;
 import lombok.AllArgsConstructor;
@@ -9,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 @AllArgsConstructor
@@ -20,6 +24,8 @@ public class TelegramBot extends TelegramLongPollingBot {
     private SecurityService securityService;
     @Autowired
     private MessageSender messageSender;
+
+    private Map<Long, UserState> stateMap;
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -41,6 +47,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         } else if(securityService.hasKeyByChatId(chatId, true)){
 
             if(update.hasMessage() && update.getMessage().hasText()){
+                String messageText = update.getMessage().getText();
+                if(messageText.equals("/menu")){
+                    messageSender.showMainMenu(chatId);
+                }
 
             }else if (update.hasCallbackQuery()){
                 String callData = update.getCallbackQuery().getData();
@@ -49,6 +59,24 @@ public class TelegramBot extends TelegramLongPollingBot {
                 chatId = update.getCallbackQuery().getMessage().getChatId();
                 if (callData.equals("SOLVED_PROBLEM")) {
                     messageSender.deleteMessage(chatId, messageId);
+                }else if(callData.equals("DOMAIN_MENU")){
+                    messageSender.showDomainMenu(chatId);
+                }else if(callData.equals("PROXY_MENU")){
+                    //messageSender.showProxyMenu(chatId);
+                }else if(callData.equals("SHOW_DOMAINS")){
+                    messageSender.showDomains(chatId);
+                }else if(callData.equals("ADD_DOMAINS")){
+                    //messageSender.showDomainMenu(chatId);
+                }else if(callData.equals("SHOW_MENU")){
+                    messageSender.showMainMenu(chatId);
+                }else if(callData.equals("DELETE_DOMAIN")){
+                    messageSender.deleteDomainButton(chatId);
+                }else if(callData.startsWith("DELETE_DOMAIN_CONF_")){
+                    String domain = "https://" + callData.substring(19);
+                    messageSender.deleteDomainConfirmation(chatId, domain);
+                }else if(callData.startsWith("DELETE_DOMAIN_ACCEPT_")){
+                    String domain = callData.substring(21);
+                    messageSender.deleteDomain(chatId, domain, messageId);
                 }
 
             }

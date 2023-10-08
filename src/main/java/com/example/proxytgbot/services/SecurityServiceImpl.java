@@ -54,7 +54,7 @@ public class SecurityServiceImpl implements SecurityService {
             keyEntity.setKeyStatus(KeyStatus.ACTIVE);
             userRepo.save(user);
             keyRepo.save(keyEntity);
-            messageSender.sendMessage(chatId, "Успех! Теперь вы можете работать с ботом");
-        }else messageSender.sendMessage(chatId, "Неправильный ключ авторизации");
+            messageSender.sendMessage(chatId, "Успех! Теперь вы можете работать с ботом✅");
+        }else messageSender.sendMessage(chatId, "Неправильный ключ авторизации❌");
     }
 }
