@@ -1,11 +1,11 @@
 package com.example.proxytgbot.services;
 
 import com.example.proxytgbot.config.BotConfig;
-import com.example.proxytgbot.models.entities.Domain;
-import com.example.proxytgbot.models.entities.Geo;
+import com.example.proxytgbot.models.entities.*;
 import com.example.proxytgbot.models.enums.DomainStatus;
-import com.example.proxytgbot.repositories.DomainRepo;
-import com.example.proxytgbot.repositories.GeoRepo;
+import com.example.proxytgbot.models.enums.KeyStatus;
+import com.example.proxytgbot.models.enums.ProxyStatus;
+import com.example.proxytgbot.repositories.*;
 import com.example.proxytgbot.services.interfaces.MessageSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -77,7 +77,24 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
         rowsInline.add(createInlineKeyboardButtonList(
                 createInlineKeyboardButton("Домены", "DOMAIN_MENU", null),
                 createInlineKeyboardButton("Прокси", "PROXY_MENU", null)
-                ));
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, "С чем хотите работать?", markup);
+    }
+
+    @Override
+    public void showMainMenuForAdmin(Long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Домены\uD83D\uDDA5", "DOMAIN_MENU", null),
+                createInlineKeyboardButton("Прокси\uD83C\uDF10", "PROXY_MENU", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Ключ доступа\uD83D\uDD11", "CREATE_KEY", null),
+                createInlineKeyboardButton("ГЕО\uD83D\uDDFA", "SHOW_GEO", null)
+        ));
         markup.setKeyboard(rowsInline);
 
         sendMessageWithButtons(chatId, "С чем хотите работать?", markup);
@@ -85,44 +102,74 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
 
     @Override
     public void showDomainMenu(Long chatId) {
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-        rowsInline.add(createInlineKeyboardButtonList(
-                createInlineKeyboardButton("Показать", "SHOW_DOMAINS", null),
-                createInlineKeyboardButton("Добавить", "ADD_DOMAINS", null)
-        ));
-        markup.setKeyboard(rowsInline);
-
-        sendMessageWithButtons(chatId, "Меню доменов", markup);
-    }
-
-    @Override
-    public void showProxyMenu(Long chatId) {
-
-    }
-
-    @Override
-    public void showDomains(Long chatId) {
         List<Domain> domainList = domainRepo.findAllByUser_TelegramChatIdAndStatus(chatId, DomainStatus.ACTIVE);
+        List<Domain> domainBanList = domainRepo.findAllByUser_TelegramChatIdAndStatus(chatId, DomainStatus.BANNED);
         List<Geo> geoList = (List<Geo>) geoRepo.findAll();
         StringBuilder str = new StringBuilder();
         AtomicInteger iter = new AtomicInteger(1);
         str.append("Список доменов:\n");
-        for(Geo geo : geoList){
+        for (Geo geo : geoList) {
             str.append(geo.getName()).append(":\n");
-            domainList.forEach(o->{
-                if(o.getGeo().getName().equals(geo.getName())){
+            domainList.forEach(o -> {
+                if (o.getGeo().getName().equals(geo.getName())) {
                     str.append(iter.get()).append(") ").append(o.getDomain()).append("\n");
                     iter.getAndIncrement();
                 }
             });
-        }
+            domainBanList.forEach(o -> {
+                if (o.getGeo().getName().equals(geo.getName())) {
+                    str.append(iter.get()).append(") ").append(o.getDomain()).append(" ❌").append("\n");
+                    iter.getAndIncrement();
+                }
+            });
 
+        }
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
         rowsInline.add(createInlineKeyboardButtonList(
-                createInlineKeyboardButton("Назад↩", "DOMAIN_MENU", null),
+                createInlineKeyboardButton("Добавить\uD83D\uDCDD", "ADD_DOMAINS", null),
                 createInlineKeyboardButton("Удалить\uD83D\uDDD1️", "DELETE_DOMAIN", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Назад↩", "SHOW_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, str.toString(), markup);
+
+    }
+
+    @Override
+    public void showProxyMenu(Long chatId) {
+        List<Proxy> proxyList = proxyRepo.findAllByUser_TelegramChatIdAndStatus(chatId, ProxyStatus.ACTIVE);
+        List<Proxy> proxyErrorList = proxyRepo.findAllByUser_TelegramChatIdAndStatus(chatId, ProxyStatus.ERROR);
+        List<Geo> geoList = (List<Geo>) geoRepo.findAll();
+        StringBuilder str = new StringBuilder();
+        AtomicInteger iter = new AtomicInteger(1);
+        str.append("Список прокси:\n");
+        for (Geo geo : geoList) {
+            str.append(geo.getName()).append(":\n");
+            proxyList.forEach(o -> {
+                if (o.getGeo().getName().equals(geo.getName())) {
+                    str.append(iter.get()).append(") ").append(o.getCode()).append("\n");
+                    iter.getAndIncrement();
+                }
+            });
+            proxyErrorList.forEach(o -> {
+                if (o.getGeo().getName().equals(geo.getName())) {
+                    str.append(iter.get()).append(") ").append(o.getCode()).append("❓\n");
+                    iter.getAndIncrement();
+                }
+            });
+        }
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Добавить\uD83D\uDCDD", "ADD_PROXY", null),
+                createInlineKeyboardButton("Удалить\uD83D\uDDD1️", "DELETE_PROXY", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Назад↩", "SHOW_MENU", null)
         ));
         markup.setKeyboard(rowsInline);
 
@@ -134,25 +181,99 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
         List<Domain> domainList = domainRepo.findAllByUser_TelegramChatIdAndStatus(chatId, DomainStatus.ACTIVE);
-        domainList.forEach(o->{
+        domainList.forEach(o -> {
             String name = o.getDomain().substring(8);
-                    rowsInline.add(createInlineKeyboardButtonList(
+            rowsInline.add(createInlineKeyboardButtonList(
                     createInlineKeyboardButton(name, "DELETE_DOMAIN_CONF_" + name, null)
             ));
         });
+        List<Domain> domainBanList = domainRepo.findAllByUser_TelegramChatIdAndStatus(chatId, DomainStatus.BANNED);
+        domainBanList.forEach(o -> {
+            String name = o.getDomain().substring(8);
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton(name + " ❌", "DELETE_DOMAIN_CONF_" + name, null)
+            ));
+        });
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Назад↩", "DOMAIN_MENU", null)
+        ));
         markup.setKeyboard(rowsInline);
 
         sendMessageWithButtons(chatId, "Выберите домен для удаления:\n", markup);
     }
 
     @Override
+    public void deleteGeoButton(Long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        List<Geo> geoList = (List<Geo>) geoRepo.findAll();
+        geoList.forEach(o -> {
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton(o.getName(), "DELETE_GEO_CONF_" + o.getId(), null)
+            ));
+        });
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Назад↩", "SHOW_GEO", null)
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, "Выберите ГЕО для удаления:\n", markup);
+    }
+
+    @Override
     public void deleteDomain(Long chatId, String domainStr, Integer messageId) {
         Domain domain = domainRepo.findDomainByUser_TelegramChatIdAndDomain(chatId, domainStr);
-        domain.setStatus(DomainStatus.BANNED);
-        domainRepo.save(domain);
+        domainRepo.deleteFun(domain.getId());
         deleteMessage(chatId, messageId);
         deleteDomainButton(chatId);
-        sendMessage(chatId, "Домен удален✅");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Список доменов↩", "DOMAIN_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+        sendMessageWithButtons(chatId, "Домен удален✅", markup);
+    }
+
+    @Override
+    public void deleteProxy(Long chatId, Long id, Integer messageId) {
+        proxyRepo.deleteFun(id);
+        deleteMessage(chatId, messageId);
+        deleteProxyButton(chatId);
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Список прокси↩", "PROXY_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+        sendMessageWithButtons(chatId, "Прокси удален✅", markup);
+    }
+
+    @Override
+    public void deleteGeo(Long chatId, Long id, Integer messageId) {
+        geoRepo.deleteProxiesByGeoId(id);
+        geoRepo.deleteDomainsByGeoId(id);
+        geoRepo.deleteById(id);
+
+        deleteMessage(chatId, messageId);
+        deleteGeoButton(chatId);
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, "ГЕО удален✅", markup);
     }
 
     @Override
@@ -165,13 +286,258 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
         ));
         markup.setKeyboard(rowsInline);
 
-        sendMessageWithButtons(chatId,"Вы уверены, что хотите удалить домен:\n" + domain, markup);
+        sendMessageWithButtons(chatId, "Вы уверены, что хотите удалить домен:\n" + domain, markup);
     }
 
-    private List<InlineKeyboardButton> createInlineKeyboardButtonList(InlineKeyboardButton... buttons){
+    @Override
+    public void deleteProxyConfirmation(Long chatId, Long id) {
+        Proxy proxy = proxyRepo.findById(id).get();
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Да✅", "DELETE_PROXY_ACCEPT_" + id, null),
+                createInlineKeyboardButton("Нет❌", "SOLVED_PROBLEM", null)
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, "Вы уверены, что хотите удалить прокси:\n" + proxy.getCode(), markup);
+    }
+
+    @Override
+    public void deleteGeoConfirmation(Long chatId, Long id) {
+        Geo geo = geoRepo.findById(id).get();
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Да✅", "DELETE_GEO_ACCEPT_" + id, null),
+                createInlineKeyboardButton("Нет❌", "SOLVED_PROBLEM", null)
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, "Вы уверены, что хотите удалить ГЕО:\n" + geo.getName(), markup);
+    }
+
+    @Override
+    public void createKey(Long chatId) {
+        Key key = new Key();
+        key.setKeyStatus(KeyStatus.FREE);
+        keyRepo.save(key);
+        sendMessage(chatId, "Новый ключ доступа:\n");
+        sendMessage(chatId, "/key " + key.getId());
+    }
+
+    @Override
+    public void showGeo(Long chatId) {
+        List<Geo> geoList = (List<Geo>) geoRepo.findAll();
+        StringBuilder str = new StringBuilder();
+        AtomicInteger iter = new AtomicInteger(1);
+        str.append("Список ГЕО:\n");
+        for (Geo geo : geoList) {
+            str.append(iter.get()).append(") ").append(geo.getName()).append("\n");
+            iter.getAndIncrement();
+        }
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Добавить\uD83D\uDCDD", "ADD_GEO", null),
+                createInlineKeyboardButton("Удалить\uD83D\uDDD1️", "DELETE_GEO", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Назад↩", "SHOW_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, str.toString(), markup);
+    }
+
+    @Override
+    public void deleteProxyButton(Long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        List<Proxy> proxyList = proxyRepo.findAllByUser_TelegramChatIdAndStatusOrderByCodeAsc(chatId, ProxyStatus.ACTIVE);
+        proxyList.forEach(o -> {
+            List<String> name = Arrays.stream(o.getCode().split(":")).toList();
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton(name.get(1) + "\n" + name.get(3), "DELETE_PROXY_CONF_" + o.getId(), null)
+            ));
+        });
+        List<Proxy> proxyErrorList = proxyRepo.findAllByUser_TelegramChatIdAndStatusOrderByCodeAsc(chatId, ProxyStatus.ERROR);
+        proxyErrorList.forEach(o -> {
+            List<String> name = Arrays.stream(o.getCode().split(":")).toList();
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton(name.get(1) + "\n" + name.get(3) + "❓", "DELETE_PROXY_CONF_" + o.getId(), null)
+            ));
+        });
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Назад↩", "PROXY_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+
+        sendMessageWithButtons(chatId, "Выберите прокси для удаления:\n", markup);
+    }
+
+    @Override
+    public void addGeoMessage(Long chatId) {
+        sendMessage(chatId, "Введите название:");
+    }
+
+    @Override
+    public void addDomainMessage(Long chatId) {
+        sendMessage(chatId, "Введите домен:");
+    }
+
+    @Override
+    public void addProxyMessage(Long chatId) {
+        sendMessage(chatId, "Введите прокси:");
+    }
+
+    @Override
+    public boolean addGeo(Long chatId, String geo) {
+        if (geoRepo.existsByName(geo)) {
+            sendMessage(chatId, "Такая ГЕО уже есть↩");
+            return false;
+        } else {
+            Geo geoEnt = new Geo();
+            geoEnt.setName(geo);
+            geoRepo.save(geoEnt);
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+            ));
+            markup.setKeyboard(rowsInline);
+            sendMessageWithButtons(chatId, "Гео " + geo + " успешно добавлена✅", markup);
+            return true;
+        }
+    }
+
+    @Override
+    public boolean addDomain(Long chatId, String domain, Long geoId) {
+        domain = domain.replace(" ", "");
+        if (domain.startsWith("http:// ")) {
+            domain = "https://" + domain.substring(8);
+        } else if (domain.startsWith("http://")) {
+            domain = "https://" + domain.substring(7);
+        } else if (domain.startsWith("https:// ")) {
+            domain = "https://" + domain.substring(9);
+        } else if (domain.startsWith("https://")) {
+
+        } else domain = "https://" + domain;
+
+        if (domainRepo.existsByDomainAndGeo_IdAndStatus(domain, geoId, DomainStatus.ACTIVE)) {
+            sendMessage(chatId, "Такой домен уже есть↩");
+            return false;
+        } else {
+
+            User user = userRepo.findUserByTelegramChatId(chatId);
+
+            Geo geo = geoRepo.findById(geoId).get();
+
+            Domain domainEnt = new Domain();
+            domainEnt.setDomain(domain);
+            domainEnt.setStatus(DomainStatus.ACTIVE);
+            domainEnt.setGeo(geo);
+            domainEnt.setUser(user);
+            user.getDomains().add(domainEnt);
+            geo.getDomains().add(domainEnt);
+            userRepo.save(user);
+
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+            ));
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton("Список доменов↩", "DOMAIN_MENU", null)
+            ));
+            markup.setKeyboard(rowsInline);
+            sendMessageWithButtons(chatId, "Домен " + domain + " успешно добавлен✅", markup);
+            return true;
+        }
+    }
+
+    @Override
+    public boolean addProxy(Long chatId, String proxy, Long geoId) {
+        proxy = proxy.replace(" ", "");
+        List<String> proxyInfo = List.of(proxy.split(":"));
+        try {
+            String proxyHost = proxyInfo.get(0);
+            int proxyPort = Integer.parseInt(proxyInfo.get(1));
+            String proxyUsername = proxyInfo.get(2);
+            String proxyPassword = proxyInfo.get(3);
+        } catch (Exception e) {
+            sendMessage(chatId, "Неправильный формат ввода прокси❌");
+            return false;
+        }
+        if (proxyRepo.existsByCodeAndGeo_IdAndStatus(proxy, geoId, ProxyStatus.ACTIVE)) {
+            sendMessage(chatId, "Такой прокси уже есть↩");
+            return false;
+        } else {
+
+            User user = userRepo.findUserByTelegramChatId(chatId);
+
+            Geo geo = geoRepo.findById(geoId).get();
+
+            Proxy proxyEnt = new Proxy();
+            proxyEnt.setStatus(ProxyStatus.ACTIVE);
+            proxyEnt.setUser(user);
+            proxyEnt.setGeo(geo);
+            proxyEnt.setCode(proxy);
+            user.getProxies().add(proxyEnt);
+            geo.getProxies().add(proxyEnt);
+            userRepo.save(user);
+
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+            ));
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton("Прокси↩", "PROXY_MENU", null)
+            ));
+            markup.setKeyboard(rowsInline);
+            sendMessageWithButtons(chatId, "Прокси\n " + proxy + " успешно добавлен✅", markup);
+            return true;
+        }
+    }
+
+    @Override
+    public void chooseGeoForDomain(Long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        List<Geo> geoList = (List<Geo>) geoRepo.findAll();
+        geoList.forEach(o -> {
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton(o.getName(), "ADD_DOMAIN_FOR_GEO_" + o.getId(), null)
+            ));
+        });
+        markup.setKeyboard(rowsInline);
+        sendMessageWithButtons(chatId, "Выберите для какого ГЕО:\n", markup);
+    }
+
+    @Override
+    public void chooseGeoForProxy(Long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        List<Geo> geoList = (List<Geo>) geoRepo.findAll();
+        geoList.forEach(o -> {
+            rowsInline.add(createInlineKeyboardButtonList(
+                    createInlineKeyboardButton(o.getName(), "ADD_PROXY_FOR_GEO_" + o.getId(), null)
+            ));
+        });
+        markup.setKeyboard(rowsInline);
+        sendMessageWithButtons(chatId, "Выберите для какого ГЕО:\n", markup);
+    }
+
+    private List<InlineKeyboardButton> createInlineKeyboardButtonList(InlineKeyboardButton... buttons) {
         return new ArrayList<>(Arrays.asList(buttons));
     }
-    private InlineKeyboardButton createInlineKeyboardButton(String text, String callbackData, String url){
+
+    private InlineKeyboardButton createInlineKeyboardButton(String text, String callbackData, String url) {
         InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
         inlineKeyboardButton.setText(text);
         inlineKeyboardButton.setUrl(url);
@@ -185,6 +551,12 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
     private DomainRepo domainRepo;
     @Autowired
     private GeoRepo geoRepo;
+    @Autowired
+    private KeyRepo keyRepo;
+    @Autowired
+    private ProxyRepo proxyRepo;
+    @Autowired
+    private UserRepo userRepo;
 
     @Override
     public void onUpdateReceived(Update update) {

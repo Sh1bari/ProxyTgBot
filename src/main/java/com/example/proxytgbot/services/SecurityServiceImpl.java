@@ -23,10 +23,10 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public boolean hasKeyByChatId(Long chatId, boolean sendMessage) {
-        if(userRepo.findUserByTelegramChatId(chatId).getKey() != null){
+        if (userRepo.findUserByTelegramChatId(chatId).getKey() != null) {
             return true;
-        }else {
-            if(sendMessage) {
+        } else {
+            if (sendMessage) {
                 messageSender.sendMessage(chatId, "Для работы в боте укажите ключ /key");
             }
             return false;
@@ -35,7 +35,7 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public void saveNewUser(Long chatId) {
-        if(!userRepo.existsByTelegramChatId(chatId)) {
+        if (!userRepo.existsByTelegramChatId(chatId)) {
             User user = new User();
             user.setRole(Role.USER);
             user.setTelegramChatId(chatId);
@@ -47,7 +47,7 @@ public class SecurityServiceImpl implements SecurityService {
     @Override
     public void connectKeyToUser(Long chatId, String msg) {
         String key = msg.substring(5);
-        if(keyRepo.existsById(key) && (keyRepo.findById(key).get().getKeyStatus() == KeyStatus.FREE)){
+        if (keyRepo.existsById(key) && (keyRepo.findById(key).get().getKeyStatus() == KeyStatus.FREE)) {
             User user = userRepo.findUserByTelegramChatId(chatId);
             Key keyEntity = keyRepo.findById(key).get();
             user.setKey(keyEntity);
@@ -55,6 +55,6 @@ public class SecurityServiceImpl implements SecurityService {
             userRepo.save(user);
             keyRepo.save(keyEntity);
             messageSender.sendMessage(chatId, "Успех! Теперь вы можете работать с ботом✅");
-        }else messageSender.sendMessage(chatId, "Неправильный ключ авторизации❌");
+        } else messageSender.sendMessage(chatId, "Неправильный ключ авторизации❌");
     }
 }
