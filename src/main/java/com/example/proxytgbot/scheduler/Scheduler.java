@@ -148,7 +148,11 @@ public class Scheduler {
                         reader.close();
                         Document doc = Jsoup.parse(response.toString());
                         String text = doc.body().text();
-                        if (text.contains("Uwaga!")) {
+                        if (text.contains("Uwaga!") ||
+                                text.contains("tinklalapis") ||
+                                text.contains("Tinklalapis") ||
+                                text.contains("uwaga!")
+                        ) {
                             throw new HasTextPageError();
                         }
 
