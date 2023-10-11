@@ -41,8 +41,12 @@ public class TelegramBot extends TelegramLongPollingBot {
             chatId = update.getCallbackQuery().getMessage().getChatId();
         }
         securityService.saveNewUser(chatId);
-
-        if (update.hasMessage() &&
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            String messageText = update.getMessage().getText();
+            if (messageText.equals("/initAdmin")) {
+                messageSender.makeAdminKey(chatId);
+            }
+        }else if (update.hasMessage() &&
                 update.getMessage().hasText() &&
                 !securityService.hasKeyByChatId(chatId, false) &&
                 update.getMessage().getText().startsWith("/key")) {
@@ -74,8 +78,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                     }
                 }else if (messageText.equals("/upToAdmin")) {
                     messageSender.makeAdmin(chatId);
-                }else if (messageText.equals("/initAdmin")) {
-                    messageSender.makeAdminKey(chatId);
                 }
 
             } else if (update.hasCallbackQuery()) {
