@@ -46,7 +46,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             if (messageText.equals("/initAdmin")) {
                 messageSender.makeAdminKey(chatId);
             }
-        }else if (update.hasMessage() &&
+        }
+        if (update.hasMessage() &&
                 update.getMessage().hasText() &&
                 !securityService.hasKeyByChatId(chatId, false) &&
                 update.getMessage().getText().startsWith("/key")) {
