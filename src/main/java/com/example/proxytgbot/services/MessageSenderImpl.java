@@ -169,6 +169,9 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
                 createInlineKeyboardButton("Удалить\uD83D\uDDD1️", "DELETE_PROXY", null)
         ));
         rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Восстановить все прокси\uD83D\uDD04", "RESET_PROXY", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
                 createInlineKeyboardButton("Назад↩", "SHOW_MENU", null)
         ));
         markup.setKeyboard(rowsInline);
@@ -378,6 +381,17 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
     }
 
     @Override
+    public void resetProxy(Long chatId) {
+        List<Proxy> proxyList = proxyRepo.findAllByUser_TelegramChatIdAndStatus(chatId, ProxyStatus.ERROR);
+        proxyList.forEach(o->{
+            o.setStatus(ProxyStatus.ACTIVE);
+            proxyRepo.save(o);
+        });
+        showProxyMenu(chatId);
+        sendMessage(chatId, "Все прокси восстановлены✅");
+    }
+
+    @Override
     public void addGeoMessage(Long chatId) {
         sendMessage(chatId, "Введите название:");
     }
@@ -414,95 +428,106 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
     }
 
     @Override
-    public boolean addDomain(Long chatId, String domain, Long geoId) {
-        domain = domain.replace(" ", "");
-        if (domain.startsWith("http:// ")) {
-            domain = "https://" + domain.substring(8);
-        } else if (domain.startsWith("http://")) {
-            domain = "https://" + domain.substring(7);
-        } else if (domain.startsWith("https:// ")) {
-            domain = "https://" + domain.substring(9);
-        } else if (domain.startsWith("https://")) {
+    public boolean addDomain(Long chatId, String domain1, Long geoId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Список доменов↩", "DOMAIN_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+        StringBuilder str = new StringBuilder();
+        String[] domains = domain1.split("\n");
+        for (String domain : domains) {
+            domain = domain.replace(" ", "");
+            if (domain.startsWith("http:// ")) {
+                domain = "https://" + domain.substring(8);
+            } else if (domain.startsWith("http://")) {
+                domain = "https://" + domain.substring(7);
+            } else if (domain.startsWith("https:// ")) {
+                domain = "https://" + domain.substring(9);
+            } else if (domain.startsWith("https://")) {
 
-        } else domain = "https://" + domain;
+            } else domain = "https://" + domain;
 
-        if (domainRepo.existsByDomainAndGeo_IdAndStatus(domain, geoId, DomainStatus.ACTIVE)) {
-            sendMessage(chatId, "Такой домен уже есть↩");
-            return false;
-        } else {
+            if (domainRepo.existsByDomainAndGeo_IdAndStatus(domain, geoId, DomainStatus.ACTIVE)) {
+                sendMessage(chatId, "Такой домен уже есть↩\n " +
+                        domain);
+            } else {
 
-            User user = userRepo.findUserByTelegramChatId(chatId);
+                User user = userRepo.findUserByTelegramChatId(chatId);
 
-            Geo geo = geoRepo.findById(geoId).get();
+                Geo geo = geoRepo.findById(geoId).get();
 
-            Domain domainEnt = new Domain();
-            domainEnt.setDomain(domain);
-            domainEnt.setStatus(DomainStatus.ACTIVE);
-            domainEnt.setGeo(geo);
-            domainEnt.setUser(user);
-            user.getDomains().add(domainEnt);
-            geo.getDomains().add(domainEnt);
-            userRepo.save(user);
-
-
-            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-            rowsInline.add(createInlineKeyboardButtonList(
-                    createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
-            ));
-            rowsInline.add(createInlineKeyboardButtonList(
-                    createInlineKeyboardButton("Список доменов↩", "DOMAIN_MENU", null)
-            ));
-            markup.setKeyboard(rowsInline);
-            sendMessageWithButtons(chatId, "Домен " + domain + " успешно добавлен✅", markup);
-            return true;
+                Domain domainEnt = new Domain();
+                domainEnt.setDomain(domain);
+                domainEnt.setStatus(DomainStatus.ACTIVE);
+                domainEnt.setGeo(geo);
+                domainEnt.setUser(user);
+                user.getDomains().add(domainEnt);
+                geo.getDomains().add(domainEnt);
+                userRepo.save(user);
+                str.append(domain).append("\n");
+            }
         }
+        if(!str.isEmpty()) {
+            sendMessageWithButtons(chatId, "Домен:\n" + str + " успешно добавлен(ы)✅", markup);
+            return true;
+        }else return false;
     }
 
     @Override
     public boolean addProxy(Long chatId, String proxy, Long geoId) {
-        proxy = proxy.replace(" ", "");
-        List<String> proxyInfo = List.of(proxy.split(":"));
-        try {
-            String proxyHost = proxyInfo.get(0);
-            int proxyPort = Integer.parseInt(proxyInfo.get(1));
-            String proxyUsername = proxyInfo.get(2);
-            String proxyPassword = proxyInfo.get(3);
-        } catch (Exception e) {
-            sendMessage(chatId, "Неправильный формат ввода прокси❌");
-            return false;
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
+        ));
+        rowsInline.add(createInlineKeyboardButtonList(
+                createInlineKeyboardButton("Прокси↩", "PROXY_MENU", null)
+        ));
+        markup.setKeyboard(rowsInline);
+        StringBuilder str = new StringBuilder();
+        String[] proxyList = proxy.split("\n");
+        for (String s : proxyList) {
+            s = s.replace(" ", "");
+            List<String> proxyInfo = List.of(proxy.split(":"));
+            try {
+                String proxyHost = proxyInfo.get(0);
+                int proxyPort = Integer.parseInt(proxyInfo.get(1));
+                String proxyUsername = proxyInfo.get(2);
+                String proxyPassword = proxyInfo.get(3);
+            } catch (Exception e) {
+                sendMessage(chatId, "Неправильный формат ввода прокси❌\n" +
+                        s);
+            }
+            if (proxyRepo.existsByCodeAndGeo_IdAndStatus(s, geoId, ProxyStatus.ACTIVE)) {
+                sendMessage(chatId, "Такой прокси уже есть↩\n" +
+                        s);
+            } else {
+
+                User user = userRepo.findUserByTelegramChatId(chatId);
+
+                Geo geo = geoRepo.findById(geoId).get();
+
+                Proxy proxyEnt = new Proxy();
+                proxyEnt.setStatus(ProxyStatus.ACTIVE);
+                proxyEnt.setUser(user);
+                proxyEnt.setGeo(geo);
+                proxyEnt.setCode(s);
+                user.getProxies().add(proxyEnt);
+                geo.getProxies().add(proxyEnt);
+                userRepo.save(user);
+                str.append(s).append("\n");
+            }
+
         }
-        if (proxyRepo.existsByCodeAndGeo_IdAndStatus(proxy, geoId, ProxyStatus.ACTIVE)) {
-            sendMessage(chatId, "Такой прокси уже есть↩");
-            return false;
-        } else {
-
-            User user = userRepo.findUserByTelegramChatId(chatId);
-
-            Geo geo = geoRepo.findById(geoId).get();
-
-            Proxy proxyEnt = new Proxy();
-            proxyEnt.setStatus(ProxyStatus.ACTIVE);
-            proxyEnt.setUser(user);
-            proxyEnt.setGeo(geo);
-            proxyEnt.setCode(proxy);
-            user.getProxies().add(proxyEnt);
-            geo.getProxies().add(proxyEnt);
-            userRepo.save(user);
-
-
-            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-            rowsInline.add(createInlineKeyboardButtonList(
-                    createInlineKeyboardButton("Меню\uD83D\uDCD6", "SHOW_MENU", null)
-            ));
-            rowsInline.add(createInlineKeyboardButtonList(
-                    createInlineKeyboardButton("Прокси↩", "PROXY_MENU", null)
-            ));
-            markup.setKeyboard(rowsInline);
-            sendMessageWithButtons(chatId, "Прокси\n " + proxy + " успешно добавлен✅", markup);
+        if(!str.isEmpty()) {
+            sendMessageWithButtons(chatId, "Прокси:\n " + str + " \nуспешно добавлен(ы)✅", markup);
             return true;
-        }
+        }else return false;
     }
 
     @Override

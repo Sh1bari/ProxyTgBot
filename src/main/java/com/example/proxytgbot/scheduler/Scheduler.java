@@ -50,7 +50,7 @@ public class Scheduler {
 
 
     @Async
-    @Scheduled(fixedRate = 600000)
+    @Scheduled(fixedRate = 300000)
     public void scheduler() throws NoSuchAlgorithmException, KeyManagementException {
         System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
@@ -110,7 +110,6 @@ public class Scheduler {
                         proxyRepo.deleteFun(proxyIter.getId());
                         continue;
                     }
-                    System.out.println(proxyPassword);
                     URL url;
                     try {
                         url = new URL(domain.getDomain());
@@ -130,34 +129,33 @@ public class Scheduler {
 
                     java.net.Proxy proxy = new java.net.Proxy(java.net.Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
-                    connection.setConnectTimeout(3000); // 3 секунды
-                    connection.setReadTimeout(3000); // 3 секунды
+                    connection.setConnectTimeout(5000); // 3 секунды
+                    connection.setReadTimeout(5000); // 3 секунды
                     connection.setRequestMethod("GET");
                     connection.setRequestProperty("User-Agent", "Chrome");
                     connection.setAuthenticator(proxyAuthenticator);
                     BufferedReader reader;
                     try {
                         int responseCode = connection.getResponseCode();
-                        System.out.println("Response Code: " + responseCode);
-                        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                        String line;
-                        StringBuilder response = new StringBuilder();
-                        while ((line = reader.readLine()) != null) {
-                            response.append(line);
+                        if(responseCode == 200) {
+                            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                            String line;
+                            StringBuilder response = new StringBuilder();
+                            while ((line = reader.readLine()) != null) {
+                                response.append(line);
+                            }
+                            reader.close();
+                            Document doc = Jsoup.parse(response.toString());
+                            String text = doc.body().text();
+                            if (text.contains("Uwaga!") ||
+                                    text.contains("tinklalapis") ||
+                                    text.contains("Tinklalapis") ||
+                                    text.contains("uwaga!")
+                            ) {
+                                throw new HasTextPageError();
+                            }
+                            // Вывод содержимого ответа
                         }
-                        reader.close();
-                        Document doc = Jsoup.parse(response.toString());
-                        String text = doc.body().text();
-                        if (text.contains("Uwaga!") ||
-                                text.contains("tinklalapis") ||
-                                text.contains("Tinklalapis") ||
-                                text.contains("uwaga!")
-                        ) {
-                            throw new HasTextPageError();
-                        }
-
-                        // Вывод содержимого ответа
-                        System.out.println("Response: " + text);
                     } catch (SocketException | SocketTimeoutException e) {
                         System.out.println("Превышено время ожидания");
 
@@ -179,6 +177,7 @@ public class Scheduler {
                         System.out.println(e.getClass());
                     } finally {
                         connection.disconnect();
+                        Thread.sleep(500);
                     }
                 }
                 // Время ожидание превышено
@@ -189,7 +188,7 @@ public class Scheduler {
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + "\nТип ошибки:\n- Превышено время ожидания" +
                             "\nПрокси:\n" + str);
-                    if (bannedProxy.size() > 2) {
+                    if (bannedProxy.size() > 3) {
                         domain.setStatus(DomainStatus.BANNED);
                         domainRepo.save(domain);
                     }

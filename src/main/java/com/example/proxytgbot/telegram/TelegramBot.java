@@ -152,6 +152,9 @@ public class TelegramBot extends TelegramLongPollingBot {
                     stateMap.put(chatId, UserState.ADD_PROXY);
                     addProxyMap.put(chatId, id);
                     messageSender.addProxyMessage(chatId);
+                } else if (callData.equals("RESET_PROXY")) {
+                    resetMap(chatId);
+                    messageSender.resetProxy(chatId);
                 }
 
             }

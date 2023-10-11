@@ -40,6 +40,7 @@ public interface MessageSender {
     void showGeo(Long chatId);
 
     void deleteProxyButton(Long chatId);
+    void resetProxy(Long chatId);
 
     void addGeoMessage(Long chatId);
 
