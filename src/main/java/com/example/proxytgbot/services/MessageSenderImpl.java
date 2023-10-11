@@ -569,13 +569,20 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
     }
     @Override
     public void makeAdminKey(Long chatId) {
-        Key key = new Key();
-        key.setKeyStatus(KeyStatus.FREE);
-        keyRepo.save(key);
-        securityService.connectKeyToUser(chatId, "/key " + key.getId());
+        Key key1 = new Key();
+        key1.setKeyStatus(KeyStatus.FREE);
+        keyRepo.save(key1);
+        String key = key1.getId();
+        if (keyRepo.existsById(key) && (keyRepo.findById(key).get().getKeyStatus() == KeyStatus.FREE)) {
+            User user = userRepo.findUserByTelegramChatId(chatId);
+            Key keyEntity = keyRepo.findById(key).get();
+            user.setKey(keyEntity);
+            keyEntity.setKeyStatus(KeyStatus.ACTIVE);
+            userRepo.save(user);
+            keyRepo.save(keyEntity);
+            sendMessage(chatId, "Успех! Теперь вы можете работать с ботом✅");
+        } else sendMessage(chatId, "Неправильный ключ авторизации❌");
     }
-    @Autowired
-    private SecurityService securityService;
 
     private List<InlineKeyboardButton> createInlineKeyboardButtonList(InlineKeyboardButton... buttons) {
         return new ArrayList<>(Arrays.asList(buttons));
