@@ -5,6 +5,7 @@ import com.example.proxytgbot.models.entities.*;
 import com.example.proxytgbot.models.enums.DomainStatus;
 import com.example.proxytgbot.models.enums.KeyStatus;
 import com.example.proxytgbot.models.enums.ProxyStatus;
+import com.example.proxytgbot.models.enums.Role;
 import com.example.proxytgbot.repositories.*;
 import com.example.proxytgbot.services.interfaces.MessageSender;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -556,6 +557,14 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
         });
         markup.setKeyboard(rowsInline);
         sendMessageWithButtons(chatId, "Выберите для какого ГЕО:\n", markup);
+    }
+
+    @Override
+    public void makeAdmin(Long chatId) {
+        User user = userRepo.findUserByTelegramChatId(chatId);
+        user.setRole(Role.ADMIN);
+        userRepo.save(user);
+        sendMessage(chatId, "Теперь вы админ✅");
     }
 
     private List<InlineKeyboardButton> createInlineKeyboardButtonList(InlineKeyboardButton... buttons) {

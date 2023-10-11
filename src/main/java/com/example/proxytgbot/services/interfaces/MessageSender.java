@@ -54,4 +54,5 @@ public interface MessageSender {
 
     void chooseGeoForDomain(Long chatId);
     void chooseGeoForProxy(Long chatId);
+    void makeAdmin(Long chatId);
 }
