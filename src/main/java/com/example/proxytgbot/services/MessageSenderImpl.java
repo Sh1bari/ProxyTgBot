@@ -77,8 +77,8 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
         rowsInline.add(createInlineKeyboardButtonList(
-                createInlineKeyboardButton("Домены", "DOMAIN_MENU", null),
-                createInlineKeyboardButton("Прокси", "PROXY_MENU", null)
+                createInlineKeyboardButton("Домены\uD83D\uDDA5", "DOMAIN_MENU", null),
+                createInlineKeyboardButton("Прокси\uD83C\uDF10", "PROXY_MENU", null)
         ));
         markup.setKeyboard(rowsInline);
 
