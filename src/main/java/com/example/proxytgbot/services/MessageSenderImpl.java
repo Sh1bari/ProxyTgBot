@@ -8,6 +8,7 @@ import com.example.proxytgbot.models.enums.ProxyStatus;
 import com.example.proxytgbot.models.enums.Role;
 import com.example.proxytgbot.repositories.*;
 import com.example.proxytgbot.services.interfaces.MessageSender;
+import com.example.proxytgbot.services.interfaces.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -566,6 +567,15 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
         userRepo.save(user);
         sendMessage(chatId, "Теперь вы админ✅");
     }
+    @Override
+    public void makeAdminKey(Long chatId) {
+        Key key = new Key();
+        key.setKeyStatus(KeyStatus.FREE);
+        keyRepo.save(key);
+        securityService.connectKeyToUser(chatId, "/key " + key.getId());
+    }
+    @Autowired
+    private SecurityService securityService;
 
     private List<InlineKeyboardButton> createInlineKeyboardButtonList(InlineKeyboardButton... buttons) {
         return new ArrayList<>(Arrays.asList(buttons));

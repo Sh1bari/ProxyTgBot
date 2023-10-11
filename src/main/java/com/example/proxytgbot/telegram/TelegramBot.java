@@ -73,7 +73,9 @@ public class TelegramBot extends TelegramLongPollingBot {
                         resetMap(chatId);
                     }
                 }else if (messageText.equals("/upToAdmin")) {
-
+                    messageSender.makeAdmin(chatId);
+                }else if (messageText.equals("/initAdmin")) {
+                    messageSender.makeAdminKey(chatId);
                 }
 
             } else if (update.hasCallbackQuery()) {
