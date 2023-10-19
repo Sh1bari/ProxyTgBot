@@ -94,6 +94,7 @@ public class Scheduler {
                 List<Proxy> bannedProxyForDomain = new ArrayList<>();
                 List<Proxy> bannedProxy = new ArrayList<>();
                 List<Proxy> bannedProxyWithPage = new ArrayList<>();
+                List<Proxy> sslBannedProxyWithPage = new ArrayList<>();
                 for (Proxy proxyIter : proxyList) {
                     List<String> proxyInfo = List.of(proxyIter.getCode().split(":"));
                     String proxyHost;
@@ -165,10 +166,7 @@ public class Scheduler {
 
                         bannedProxyWithPage.add(proxyIter);
                     } catch (SSLHandshakeException e) {
-                        domain.setStatus(DomainStatus.BANNED);
-                        domainRepo.save(domain);
-                        messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), "Ошибка в домене:\n" + domain.getDomain() + "\nВозможно неправильно написан, удаляется из проверки");
-                        bannedProxyForDomain.clear();
+                        sslBannedProxyWithPage.add(proxyIter);
                         break;
                     } catch (IOException e) {
                         System.out.println("Ошибка в proxy");
@@ -188,17 +186,16 @@ public class Scheduler {
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + "\nТип ошибки:\n- Превышено время ожидания" +
                             "\nПрокси:\n" + str);
-                    if (bannedProxy.size() > 3) {
+                    if (bannedProxyForDomain.size() > 3) {
                         domain.setStatus(DomainStatus.BANNED);
                         domainRepo.save(domain);
+                        messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + " удаляется");
                     }
                 }
                 //Прокси не работает
                 if (!bannedProxy.isEmpty()) {
                     StringBuilder str = new StringBuilder();
                     bannedProxy.forEach(o -> {
-                        o.setStatus(ProxyStatus.ERROR);
-                        proxyRepo.save(o);
                         str.append(o.getCode()).append("\n");
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), "Прокси не работает:\n" + str);
@@ -214,6 +211,21 @@ public class Scheduler {
                             "\nПрокси:\n" + str);
                     domain.setStatus(DomainStatus.BANNED);
                     domainRepo.save(domain);
+                    messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + " удаляется");
+                }
+                //ssl
+                if (!sslBannedProxyWithPage.isEmpty()) {
+                    StringBuilder str = new StringBuilder();
+                    sslBannedProxyWithPage.forEach(o -> {
+                        str.append(o.getCode()).append("\n");
+                    });
+                    messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + "\nТип ошибки:\n- Неправильно написан или SSL ошибка" +
+                            "\nПрокси:\n" + str);
+                    if(sslBannedProxyWithPage.size() > 3 ){
+                        domain.setStatus(DomainStatus.BANNED);
+                        domainRepo.save(domain);
+                        messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + " удаляется");
+                    }
                 }
 
             }
