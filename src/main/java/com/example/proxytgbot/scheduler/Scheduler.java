@@ -186,11 +186,6 @@ public class Scheduler {
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + "\nТип ошибки:\n- Превышено время ожидания" +
                             "\nПрокси:\n" + str);
-                    if (bannedProxyForDomain.size() > 3) {
-                        domain.setStatus(DomainStatus.BANNED);
-                        domainRepo.save(domain);
-                        messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + " удаляется");
-                    }
                 }
                 //Прокси не работает
                 if (!bannedProxy.isEmpty()) {
@@ -221,11 +216,6 @@ public class Scheduler {
                     });
                     messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + "\nТип ошибки:\n- Неправильно написан или SSL ошибка" +
                             "\nПрокси:\n" + str);
-                    if(sslBannedProxyWithPage.size() > 3 ){
-                        domain.setStatus(DomainStatus.BANNED);
-                        domainRepo.save(domain);
-                        messageSender.sendErrorMessageByScheduler(user.getTelegramChatId(), domain.getDomain() + " удаляется");
-                    }
                 }
 
             }
