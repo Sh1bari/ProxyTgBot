@@ -48,7 +48,6 @@ public class Scheduler {
     @Autowired
     private DomainRepo domainRepo;
 
-
     @Async
     @Scheduled(fixedRate = 300000)
     public void scheduler(){
@@ -137,18 +136,15 @@ public class Scheduler {
                             // Вывод содержимого ответа
                         }
                     } catch (SocketException | SocketTimeoutException e) {
-                        System.out.println("Превышено время ожидания");
 
                         bannedProxyForDomain.add(proxyIter);
                     } catch (HasTextPageError e) {
-                        System.out.println("Есть страница с баном");
 
                         bannedProxyWithPage.add(proxyIter);
                     } catch (SSLHandshakeException e) {
                         sslBannedProxyWithPage.add(proxyIter);
                         break;
                     } catch (IOException e) {
-                        System.out.println("Ошибка в proxy");
                         bannedProxy.add(proxyIter);
                     } catch (Exception e) {
                         System.out.println(e.getClass());
