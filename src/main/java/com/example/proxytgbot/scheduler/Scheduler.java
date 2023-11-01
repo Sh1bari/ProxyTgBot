@@ -51,28 +51,7 @@ public class Scheduler {
 
     @Async
     @Scheduled(fixedRate = 300000)
-    public void scheduler() throws NoSuchAlgorithmException, KeyManagementException {
-        System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "");
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                return null;
-            }
-
-            public void checkClientTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
-            }
-
-            public void checkServerTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
-            }
-        }};
-
-        // Игнорирование ошибок SSL-сертификата
-        SSLContext sc = SSLContext.getInstance("SSL");
-        sc.init(null, trustAllCerts, new java.security.SecureRandom());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        HttpsURLConnection.setDefaultHostnameVerifier((hostname, sslSession) -> true);
-
+    public void scheduler(){
         List<User> userList = (List<User>) userRepo.findAll();
         for (User user : userList) {
             check(user);
