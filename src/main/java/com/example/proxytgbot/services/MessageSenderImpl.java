@@ -227,8 +227,10 @@ public class MessageSenderImpl extends TelegramLongPollingBot implements Message
 
     @Override
     public void deleteDomain(Long chatId, String domainStr, Integer messageId) {
-        Domain domain = domainRepo.findDomainByUser_TelegramChatIdAndDomain(chatId, domainStr);
-        domainRepo.deleteFun(domain.getId());
+        List<Domain> domain = domainRepo.findDomainsByUser_TelegramChatIdAndDomain(chatId, domainStr);
+        domain.forEach(o->{
+            domainRepo.deleteFun(o.getId());
+        });
         deleteMessage(chatId, messageId);
         deleteDomainButton(chatId);
 

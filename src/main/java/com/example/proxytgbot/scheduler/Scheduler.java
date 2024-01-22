@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
-@EnableAsync
 public class Scheduler {
 
     @Autowired
@@ -48,7 +47,6 @@ public class Scheduler {
     @Autowired
     private DomainRepo domainRepo;
 
-    @Async
     @Scheduled(fixedRate = 300000)
     public void scheduler(){
         List<User> userList = (List<User>) userRepo.findAll();

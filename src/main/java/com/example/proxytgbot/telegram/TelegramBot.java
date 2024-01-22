@@ -8,29 +8,29 @@ import com.example.proxytgbot.repositories.UserRepo;
 import com.example.proxytgbot.services.interfaces.MessageSender;
 import com.example.proxytgbot.services.interfaces.SecurityService;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TelegramBot extends TelegramLongPollingBot {
 
-    @Autowired
-    private BotConfig botConfig;
-    @Autowired
-    private SecurityService securityService;
-    @Autowired
-    private MessageSender messageSender;
+    private final BotConfig botConfig;
+    private final  SecurityService securityService;
+    private final MessageSender messageSender;
 
-    private Map<Long, UserState> stateMap;
-    private Map<Long, Long> addDomainMap;
-    private Map<Long, Long> addProxyMap;
-    @Autowired
-    private UserRepo userRepo;
+    private final Map<Long, UserState> stateMap = new HashMap<>();
+    private final Map<Long, Long> addDomainMap = new HashMap<>();
+    private final Map<Long, Long> addProxyMap = new HashMap<>();
+    
+    private final UserRepo userRepo;
 
     @Override
     public void onUpdateReceived(Update update) {

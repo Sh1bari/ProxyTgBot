@@ -19,7 +19,7 @@ public interface DomainRepo extends CrudRepository<Domain, Long> {
 
     List<Domain> findAllByUser_TelegramChatIdAndStatus(Long chatId, DomainStatus status);
 
-    Domain findDomainByUser_TelegramChatIdAndDomain(Long chatId, String domain);
+    List<Domain> findDomainsByUser_TelegramChatIdAndDomain(Long chatId, String domain);
 
     boolean existsByDomainAndGeo_IdAndStatus(String domain, Long geoId, DomainStatus status);
 }
